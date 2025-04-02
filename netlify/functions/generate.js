@@ -22,10 +22,12 @@ exports.handler = async function(event) {
     });
 
     const text = await response.text();
+
     if (!text) {
+      console.error("Empty response from FusionBrain API");
       return {
         statusCode: 500,
-        body: JSON.stringify({ error: "Empty response from API" })
+        body: JSON.stringify({ error: "Empty response from FusionBrain API" })
       };
     }
 
@@ -35,6 +37,7 @@ exports.handler = async function(event) {
       body: JSON.stringify(json)
     };
   } catch (err) {
+    console.error("GENERATION ERROR:", err);
     return {
       statusCode: 500,
       body: JSON.stringify({ error: err.message || "Unknown error" })
