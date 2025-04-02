@@ -1,0 +1,108 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>KubikGen 1.1</title>
+  <style>
+    body {
+      background: #111;
+      color: #eee;
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: start;
+      padding: 30px;
+    }
+    h1 {
+      font-size: 28px;
+      margin-bottom: 10px;
+    }
+    input, button {
+      padding: 10px;
+      font-size: 16px;
+      width: 320px;
+      margin: 10px;
+      border-radius: 8px;
+      border: none;
+    }
+    button {
+      background-color: #00aaff;
+      color: white;
+      cursor: pointer;
+    }
+    img {
+      margin-top: 20px;
+      max-width: 90%;
+      border-radius: 12px;
+    }
+    .loading {
+      margin-top: 20px;
+      font-size: 18px;
+      color: #aaa;
+    }
+    .error {
+      color: #ff4444;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>KubikGen 1.1</h1>
+  <input type="text" id="prompt" placeholder="Введите промпт..." />
+  <button onclick="generate()">Сгенерировать</button>
+  <div id="status" class="loading"></div>
+  <div id="error" class="error"></div>
+  <div id="result"></div>
+
+  <script>
+    async function generate() {
+      const prompt = document.getElementById("prompt").value.trim();
+      const result = document.getElementById("result");
+      const error = document.getElementById("error");
+      const status = document.getElementById("status");
+
+      result.innerHTML = "";
+      error.innerText = "";
+      status.innerText = "Генерация...";
+
+      if (!prompt) {
+        error.innerText = "Пожалуйста, введите текст.";
+        status.innerText = "";
+        return;
+      }
+
+      try {
+        const startGen = await fetch("/.netlify/functions/generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt })
+        });
+
+        const data = await startGen.json();
+
+        if (!data.uuid) throw new Error("Не удалось запустить генерацию");
+
+        async function check() {
+          const res = await fetch("/.netlify/functions/generate?uuid=" + data.uuid);
+          const final = await res.json();
+
+          if (final.image) {
+            status.innerText = "";
+            result.innerHTML = "<img src='" + final.image + "' />";
+          } else {
+            setTimeout(check, 2500);
+          }
+        }
+
+        check();
+      } catch (e) {
+        console.error(e);
+        error.innerText = "Ошибка генерации. Попробуйте позже.";
+        status.innerText = "";
+      }
+    }
+  </script>
+</body>
+</html>
